@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+message Header {
+    string file_name = 1;
+    int32 no_pieces = 2;
+    int32 piece_no = 3;
+    bytes payload = 4;
+    int32 size = 5;
+}
+
+message Data {
+    int32 piece_no = 1;
+    bytes payload = 2;
+    int32 size = 3;
+}

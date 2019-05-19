@@ -1,0 +1,12 @@
+*.out
+*.txt
+*.mp4
+*.png
+*.pptx
+*.pdf
+*.jpg
+*.mp3
+*.bin
+barcodes/
+.vscode/
+.git
