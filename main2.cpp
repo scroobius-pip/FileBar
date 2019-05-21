@@ -17,6 +17,8 @@ jab_data *wrapHeaderChunk(char *buffer, string fileName, unsigned int no_pieces,
     header->set_no_pieces(no_pieces);
 
     string string_buffer(buffer, size);
+    cout << "Input size: " << string_buffer.size() << endl;
+    cout << "passed size: " << size << endl;
     header->set_payload(string_buffer);
 
     header->set_payload_size(size);
@@ -27,6 +29,7 @@ jab_data *wrapHeaderChunk(char *buffer, string fileName, unsigned int no_pieces,
     jab_data *data = 0;
     data = (jab_data *)malloc(sizeof(jab_data) + temp_string.length() * sizeof(jab_char));
     data->length = temp_string.length();
+
     memcpy(data->data, temp_string.c_str(), data->length);
     // delete (&string_buffer);
     return data;
@@ -90,7 +93,7 @@ void chunkFile(char *fullFilePath, string chunkName, unsigned long chunkSize)
             }
             else
             {
-                cout << fileStream.gcount() << endl;
+                // cout << fileStream.gcount() << endl;
                 data = wrapDataChunk(buffer, counter, fileStream.gcount());
             }
 
@@ -157,32 +160,34 @@ void joinFile(string chunkName, string fileOutput)
                     // char *inputBuffer = new char[decoded_data->length];
                     if (counter == 0)
                     {
+
                         cout << "Decoding Header Chunk" << endl;
+
+                        string stringBuffer(decoded_data->data, decoded_data->length);
+
                         Header *header = new Header();
-                        header->ParseFromString(decoded_data->data);
+                        header->ParseFromString(stringBuffer);
 
                         char *inputBuffer = new char[header->payload_size()];
-                        // inputBuffer = (char *)header->payload().c_str();
+                        memcpy(inputBuffer, header->payload().c_str(), header->payload_size());
 
                         outputfile.write(inputBuffer, header->payload_size());
-                        // delete (inputBuffer);
                     }
                     else
                     {
                         cout << "Decoding chunk: " << counter << endl;
-                        Data *data = new Data();                   //create Protobuf container
-                        data->ParseFromString(decoded_data->data); //initialize probuf container with decoded data
+
+                        string stringBuffer(decoded_data->data, decoded_data->length);
+
+                        Data *data = new Data();             //create Protobuf container
+                        data->ParseFromString(stringBuffer); //initialize probuf container with decoded data
 
                         char *inputBuffer = new char[data->payload_size()]; //create a container for storing payload
-                        inputBuffer = (char *)data->payload().c_str();      //convert string payload to char *
-                        cout << data->payload_size() << endl;
-                        cout << decoded_data->length << endl;
-                        cout << sizeof(inputBuffer) << endl;
+                        memcpy(inputBuffer, data->payload().c_str(), data->payload_size());
+
                         outputfile.write(inputBuffer, data->payload_size());
                     }
 
-                    // outputfile.write(decoded_data->data, decoded_data->length);
-                    // delete (inputBuffer);
                     fileInput.close();
                 }
                 else
