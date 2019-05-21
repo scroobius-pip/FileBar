@@ -172,9 +172,9 @@ class Header :
   ::std::string* release_file_name();
   void set_allocated_file_name(::std::string* file_name);
 
-  // bytes payload = 4;
+  // bytes payload = 5;
   void clear_payload();
-  static const int kPayloadFieldNumber = 4;
+  static const int kPayloadFieldNumber = 5;
   const ::std::string& payload() const;
   void set_payload(const ::std::string& value);
   #if LANG_CXX11
@@ -198,11 +198,11 @@ class Header :
   ::google::protobuf::int32 piece_no() const;
   void set_piece_no(::google::protobuf::int32 value);
 
-  // int32 size = 5;
-  void clear_size();
-  static const int kSizeFieldNumber = 5;
-  ::google::protobuf::int32 size() const;
-  void set_size(::google::protobuf::int32 value);
+  // int32 payload_size = 4;
+  void clear_payload_size();
+  static const int kPayloadSizeFieldNumber = 4;
+  ::google::protobuf::int32 payload_size() const;
+  void set_payload_size(::google::protobuf::int32 value);
 
   // @@protoc_insertion_point(class_scope:Header)
  private:
@@ -213,7 +213,7 @@ class Header :
   ::google::protobuf::internal::ArenaStringPtr payload_;
   ::google::protobuf::int32 no_pieces_;
   ::google::protobuf::int32 piece_no_;
-  ::google::protobuf::int32 size_;
+  ::google::protobuf::int32 payload_size_;
   mutable ::google::protobuf::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_Chunk_2eproto;
 };
@@ -314,9 +314,9 @@ class Data :
 
   // accessors -------------------------------------------------------
 
-  // bytes payload = 2;
+  // bytes payload = 3;
   void clear_payload();
-  static const int kPayloadFieldNumber = 2;
+  static const int kPayloadFieldNumber = 3;
   const ::std::string& payload() const;
   void set_payload(const ::std::string& value);
   #if LANG_CXX11
@@ -334,11 +334,11 @@ class Data :
   ::google::protobuf::int32 piece_no() const;
   void set_piece_no(::google::protobuf::int32 value);
 
-  // int32 size = 3;
-  void clear_size();
-  static const int kSizeFieldNumber = 3;
-  ::google::protobuf::int32 size() const;
-  void set_size(::google::protobuf::int32 value);
+  // int32 payload_size = 2;
+  void clear_payload_size();
+  static const int kPayloadSizeFieldNumber = 2;
+  ::google::protobuf::int32 payload_size() const;
+  void set_payload_size(::google::protobuf::int32 value);
 
   // @@protoc_insertion_point(class_scope:Data)
  private:
@@ -347,7 +347,7 @@ class Data :
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::internal::ArenaStringPtr payload_;
   ::google::protobuf::int32 piece_no_;
-  ::google::protobuf::int32 size_;
+  ::google::protobuf::int32 payload_size_;
   mutable ::google::protobuf::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_Chunk_2eproto;
 };
@@ -443,7 +443,21 @@ inline void Header::set_piece_no(::google::protobuf::int32 value) {
   // @@protoc_insertion_point(field_set:Header.piece_no)
 }
 
-// bytes payload = 4;
+// int32 payload_size = 4;
+inline void Header::clear_payload_size() {
+  payload_size_ = 0;
+}
+inline ::google::protobuf::int32 Header::payload_size() const {
+  // @@protoc_insertion_point(field_get:Header.payload_size)
+  return payload_size_;
+}
+inline void Header::set_payload_size(::google::protobuf::int32 value) {
+  
+  payload_size_ = value;
+  // @@protoc_insertion_point(field_set:Header.payload_size)
+}
+
+// bytes payload = 5;
 inline void Header::clear_payload() {
   payload_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
@@ -496,20 +510,6 @@ inline void Header::set_allocated_payload(::std::string* payload) {
   // @@protoc_insertion_point(field_set_allocated:Header.payload)
 }
 
-// int32 size = 5;
-inline void Header::clear_size() {
-  size_ = 0;
-}
-inline ::google::protobuf::int32 Header::size() const {
-  // @@protoc_insertion_point(field_get:Header.size)
-  return size_;
-}
-inline void Header::set_size(::google::protobuf::int32 value) {
-  
-  size_ = value;
-  // @@protoc_insertion_point(field_set:Header.size)
-}
-
 // -------------------------------------------------------------------
 
 // Data
@@ -528,7 +528,21 @@ inline void Data::set_piece_no(::google::protobuf::int32 value) {
   // @@protoc_insertion_point(field_set:Data.piece_no)
 }
 
-// bytes payload = 2;
+// int32 payload_size = 2;
+inline void Data::clear_payload_size() {
+  payload_size_ = 0;
+}
+inline ::google::protobuf::int32 Data::payload_size() const {
+  // @@protoc_insertion_point(field_get:Data.payload_size)
+  return payload_size_;
+}
+inline void Data::set_payload_size(::google::protobuf::int32 value) {
+  
+  payload_size_ = value;
+  // @@protoc_insertion_point(field_set:Data.payload_size)
+}
+
+// bytes payload = 3;
 inline void Data::clear_payload() {
   payload_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
@@ -579,20 +593,6 @@ inline void Data::set_allocated_payload(::std::string* payload) {
   }
   payload_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), payload);
   // @@protoc_insertion_point(field_set_allocated:Data.payload)
-}
-
-// int32 size = 3;
-inline void Data::clear_size() {
-  size_ = 0;
-}
-inline ::google::protobuf::int32 Data::size() const {
-  // @@protoc_insertion_point(field_get:Data.size)
-  return size_;
-}
-inline void Data::set_size(::google::protobuf::int32 value) {
-  
-  size_ = value;
-  // @@protoc_insertion_point(field_set:Data.size)
 }
 
 #ifdef __GNUC__
