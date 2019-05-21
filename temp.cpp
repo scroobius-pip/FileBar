@@ -217,7 +217,7 @@ int joinFile(string chunkName)
 
 int main()
 {
-    chunkFile("picture.jpg", "./barcodes/chunk", 3000); //takes the file to be encoded, and directory to store the barcodes (it should be created manually)
+    chunkFile("picture.jpg", "./barcodes/chunk", 3000); //takes the file to be encoded, and directory to store the barcodes (the directory must be created manually)
     joinFile("./barcodes/chunk");                       //takes the barcode directory
     return 0;
 }
