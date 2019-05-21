@@ -1,47 +1,13 @@
 #include "include/jabcode.h"
-#include "include/xxhash.hpp"
 #include <iostream>
 #include <string>
 #include <fstream>
 #include <sys/stat.h>
 #include "generated/Chunk.pb.h"
 #include <sstream>
+#include <cstring>
 
 using namespace std;
-
-int encode(jab_char *, string);
-int decode(string);
-
-xxh::hash32_t generateHash(char *data_string)
-{
-    xxh::hash_t<32> hash = xxh::xxhash<32, char>(data_string);
-
-    return hash;
-}
-
-string wrapHeaderChunk(char *buffer, string fileName, unsigned int no_pieces)
-{
-    Header *header = new Header();
-    header->set_file_name(fileName);
-    header->set_piece_no(0);
-    header->set_no_pieces(no_pieces);
-    header->set_payload(buffer);
-    ostringstream stream;
-    header->SerializeToOstream(&stream);
-    string temp_string = stream.str();
-    return temp_string;
-}
-
-string wrapDataChunk(char *buffer, unsigned int piece_no)
-{
-    Data *data = new Data();
-    data->set_piece_no(piece_no);
-    data->set_payload(buffer);
-    ostringstream stream;
-    data->SerializeToOstream(&stream);
-    string temp_string = stream.str();
-    return temp_string;
-}
 
 size_t getFileSizeBytes(const std::string fileName)
 {
@@ -51,121 +17,207 @@ size_t getFileSizeBytes(const std::string fileName)
     return 0;
 }
 
-bool encodeFile(const string fileName, unsigned int buffer_size)
+jab_data *wrapHeaderChunk(char *buffer, string fileName, unsigned int no_pieces, unsigned int size) //wrap header
 {
-    unsigned int chunkCount = 0;
+    Header *header = new Header(); //initializes protobuf container (read the protobuf c++ docs for more info)
+    header->set_file_name(fileName);
+    header->set_piece_no(0);
+    header->set_no_pieces(no_pieces);
 
-    char *buffer = new char[buffer_size];
+    string string_buffer(buffer, size); //create a string container of size "size" and store the contents of buffer
 
+    header->set_payload(string_buffer);
+    header->set_payload_size(size);
+
+    ostringstream stream; // creating a string stream to allow us convert from Header to a string container
+    header->SerializeToOstream(&stream);
+
+    string temp_string = stream.str();
+
+    jab_data *data = 0;                                                                    //jab_data is used by the jabcode library to store data
+    data = (jab_data *)malloc(sizeof(jab_data) + temp_string.length() * sizeof(jab_char)); // allocating memory to store temp_string as a jab_data
+    data->length = temp_string.length();
+
+    memcpy(data->data, temp_string.c_str(), data->length); //read on memcpy
+
+    return data;
+}
+
+jab_data *wrapDataChunk(char *buffer, unsigned int piece_no, unsigned int size) //add header information to the payload
+{
+    Data *data = new Data();
+    data->set_piece_no(piece_no);
+
+    string string_buffer(buffer, size);
+    data->set_payload(string_buffer);
+
+    data->set_payload_size(size);
+
+    ostringstream stream;
+    data->SerializeToOstream(&stream);
+    string temp_string = stream.str();
+
+    jab_data *jdata = 0;
+    jdata = (jab_data *)malloc(sizeof(jab_data) + temp_string.length() * sizeof(jab_char));
+    jdata->length = temp_string.length();
+
+    memcpy(jdata->data, temp_string.c_str(), jdata->length);
+
+    return jdata;
+}
+
+int chunkFile(char *fullFilePath, string chunkName, unsigned long chunkSize)
+{
     ifstream fileStream;
-    fileStream.open(fileName, ios::in | ios::binary);
+    fileStream.open(fullFilePath, ios::in | ios::binary);
 
-    if (!fileStream.is_open())
+    // File open a success
+    if (!fileStream.is_open()) //check if input file does not exist
     {
-        cout << "unable to open " << fileName << endl;
+        std::cout << "Error opening input file!" << endl;
         return 1;
     }
 
+    std::cout << "opened: " << fullFilePath << endl;
+
+    int counter = 0;
+
+    // Create a buffer to hold each chunk
+    char *buffer = new char[chunkSize];
+
+    // Keep reading until end of file
     while (!fileStream.eof())
     {
 
-        fileStream.read(buffer, buffer_size);
-        string chunk_name = to_string(chunkCount);
+        string fullChunkName = chunkName + to_string(counter) + ".png";
 
-        if (chunkCount == 0)
-        { //header
+        fileStream.read(buffer, chunkSize);
 
-            cout << "size of file (kb): " << (float)getFileSizeBytes(fileName) / 1000 << endl;
-            uint32_t no_pieces = 1 + ((getFileSizeBytes(fileName) - 1) / buffer_size);
-            cout << "No of pieces to encode: " << no_pieces << endl;
+        const jab_int32 symbol_number = 145; //read the jabcode specification, table 1 for more information
+        const jab_int32 color_number = 256;
 
-            string wrappedChunk = wrapHeaderChunk(buffer, fileName, no_pieces);
-            const char *c = wrappedChunk.c_str();
+        jab_encode *enc = createEncode(symbol_number, color_number);
+        jab_data *data = 0;
 
-            if (encode((char *)c, chunk_name) != 0)
-            {
-                cout << "Unable to encode chunk: " << chunkCount << endl;
-                break;
-            }
+        if (counter == 0) //the header has a piece no of 0
+        {
+            uint32_t no_pieces = 1 + ((getFileSizeBytes(fullFilePath) - 1) / chunkSize); //  number of pieces needed to be encoded including the header
+            cout << "Encoding: " << no_pieces << " Pieces" << endl;
+
+            data = wrapHeaderChunk(buffer, fullFilePath, no_pieces, fileStream.gcount());
         }
         else
         {
-
-            string wrappedChunk = wrapDataChunk(buffer, chunkCount);
-            const char *c = wrappedChunk.c_str();
-            if (encode((char *)c, chunk_name) != 0)
-            {
-                cout << "Unable to encode chunk: " << chunkCount << endl;
-                break;
-            }
+            data = wrapDataChunk(buffer, counter, fileStream.gcount());
         }
 
-        cout << "Encoded Chunk: " << chunk_name << endl;
-        chunkCount++;
+        std::cout << "encoding chunk: " << counter << endl;
+
+        if (generateJABCode(enc, data) != 0)
+        {
+            std::cout << "jabcode not generated" << endl;
+            return 1;
+        }
+
+        //converting from a string (fullChunkName) to char* (file_name)
+        jab_char *file_name = new jab_char[fullChunkName.length() + 1];
+        strcpy(file_name, fullChunkName.c_str());
+
+        saveImage(enc->bitmap, file_name);
+
+        //deallocate memory
+        destroyEncode(enc);
+        delete (file_name);
+
+        counter++;
     }
-    cout << "Created: " << chunkCount << " Chunks." << endl;
+
+    // deallocate buffer
     delete (buffer);
+
+    // Close input file stream.
+    fileStream.close();
+
+    std::cout << "Chunking complete! " << counter << " barcodes generated." << endl;
 }
 
-int encode(jab_char *chunk_data, string chunk_name)
+int joinFile(string chunkName)
 {
-    const jab_int32 symbol_number = 145;
-    const jab_int32 color_number = 256;
 
-    jab_encode *enc = createEncode(symbol_number, color_number);
-
-    jab_data *data = 0;
-    data = (jab_data *)malloc(sizeof(jab_data) + strlen(chunk_data) * sizeof(jab_char));
-    data->length = strlen(chunk_data);
-    memcpy(data->data, chunk_data, data->length);
-
-    if (generateJABCode(enc, data) != 0)
-    {
-
-        std::cout << "jabcode not generated" << std::endl;
-        return 1;
-    };
-
-    chunk_name = "./barcodes/" + chunk_name + ".png";
-    jab_char *file_name = new jab_char[chunk_name.length() + 1]; //allocate char* space for string
-    strcpy(file_name, chunk_name.c_str());                       //copy string to char*
-
-    saveImage(enc->bitmap, file_name);
-    destroyEncode(enc);
-
-    return 0;
-}
-
-char *decodeImage(string imageName)
-{
+    string headerChunkName = chunkName + to_string(0) + ".png";
     jab_bitmap *bitmap;
-    bitmap = readImage((char *)imageName.c_str());
+    bitmap = readImage((char *)headerChunkName.c_str()); //read  header jabcode
     jab_int32 status;
     jab_data *decoded_data = decodeJABCode(bitmap, NORMAL_DECODE, &status);
-    if (status == 3)
+
+    if (status != 3)
     {
-        return decoded_data->data;
+        std::cout << "Error: Unable to decode header file." << endl;
+        return 1;
     }
-    else
+
+    std::cout << "Decoding Header Chunk" << endl;
+
+    string stringBuffer(decoded_data->data, decoded_data->length);
+
+    Header *header = new Header();
+    header->ParseFromString(stringBuffer); //converting jabcode to protobuf container
+
+    char *inputHeaderBuffer = new char[header->payload_size()]; //allocating space for the payload
+    memcpy(inputHeaderBuffer, header->payload().c_str(), header->payload_size());
+    string fileOutputName = "output_" + header->file_name();
+    cout << "saving to " << fileOutputName << endl;
+    ofstream outputfile;
+    outputfile.open(fileOutputName.c_str(), ios::out | ios::binary);
+
+    if (!outputfile.is_open())
     {
-        cout << "unable to decode" << endl;
+        std::cout << "Error: Unable to open file for output." << endl;
+        return 1;
     }
-    delete (bitmap);
+
+    outputfile.write(inputHeaderBuffer, header->payload_size());
+    delete[] inputHeaderBuffer;
+
+    cout << "No Of Pieces: " << header->no_pieces() << endl;
+
+    for (int counter = 1; counter < header->no_pieces(); counter++)
+    {
+        string fullChunkName = chunkName + to_string(counter) + ".png";
+
+        jab_bitmap *bitmap;
+        bitmap = readImage((char *)fullChunkName.c_str());
+        jab_int32 status;
+        jab_data *decoded_data = decodeJABCode(bitmap, NORMAL_DECODE, &status);
+        if (status != 3)
+        {
+            std::cout << "Unable to decode chunk: " << counter << endl;
+            return 1;
+        }
+
+        std::cout << "Decoding chunk: " << counter << endl;
+
+        string stringBuffer(decoded_data->data, decoded_data->length);
+
+        Data *data = new Data();             //create Protobuf container
+        data->ParseFromString(stringBuffer); //initialize probuf container with decoded data
+
+        char *inputBuffer = new char[data->payload_size()]; //create a container for storing payload
+        memcpy(inputBuffer, data->payload().c_str(), data->payload_size());
+
+        outputfile.write(inputBuffer, data->payload_size());
+        delete[] inputBuffer;
+    }
+
+    // Close output file.
+    outputfile.close();
+
+    std::cout << "File assembly complete!" << endl;
 }
 
 int main()
 {
-
-    // Header *header = new Header();
-    string data("hel\0lo", 6);
-
-    char to[1000];
-    copy(data.begin(), data.end(), begin(to));
-    // header->set_payload(data);
-    ofstream fileOutput;
-
-    fileOutput.open("out.bin", ios::out | ios::binary);
-    fileOutput << to;
+    chunkFile("picture.jpg", "./barcodes/chunk", 3000); //takes the file to be encoded, and directory to store the barcodes (it should be created manually)
+    joinFile("./barcodes/chunk");                       //takes the barcode directory
+    return 0;
 }
-
-// g++ main.cpp ./build/libjabcode.a -lpng -lprotobuf
