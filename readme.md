@@ -1,4 +1,4 @@
-Compilation Steps For Macos
+Compilation Steps 
 
 1. Compile Jabcode Library
 2. Compile Protobuf Library
@@ -14,6 +14,7 @@ Compilation Steps For Macos
 
 2) Install Protobuf Library
    a) http://google.github.io/proto-lens/installing-protoc.html
+   b) https://github.com/protocolbuffers/protobuf/blob/master/src/README.md
 
 3) Install lpng library
    a) run "brew install libpng" with terminal
