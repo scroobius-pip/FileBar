@@ -23,7 +23,7 @@ Compilation Steps
    a) open the terminal in this folder run the following in the terminal: "protoc -I ./ --cpp_out ./generated ./Chunk.proto"
 
 5) Build Code
-   a)Run the following in terminal "g++ main.cpp ./generated/Chunk.pb.cc ./build/libjabcode.a -lpng -lprotobuf"
+   a)Run the following in terminal "// g++ -std=c++11 main.cpp ./generated/Chunk.pb.cc ./build/libjabcode.a -lpng  -lprotobuf -ltiff -lz -ljpeg -lpthread"
 
 6) Run Code
    a) Run "./a.out"
