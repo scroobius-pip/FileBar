@@ -1,3 +1,8 @@
+Filebar allows files of any type to be printed on paper. It's an alternate means of storing data, you could store a music file by running it through the program. The program generates high capacity bar codes that could  be printed on paper. 
+
+
+
+
 Compilation Steps 
 
 1. Compile Jabcode Library
